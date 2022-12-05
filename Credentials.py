@@ -1,4 +1,4 @@
 #!/usr/bin/python
 
-cred_username = 'your username'
-cred_password = 'your password'
+#Below is the AppPassword generated from Google for this account. See reference: https://www.abstractapi.com/guides/sending-email-with-python
+cred_password = 'yourgapppassword'

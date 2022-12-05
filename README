@@ -1,0 +1,18 @@
+#README
+#SecretSantaScript 2022
+
+#Prerequisites
+You must have the following setup before running the SecretSantaScript
+1. Working python runtime environment
+2. 'input.xml' file in correct format
+3. 'backup_master.xml' file in correct format if you are running the repetition test
+4. Valid gmail account with 2-factor authentication and an unused AppPassword (ref https://www.abstractapi.com/guides/sending-email-with-python)
+
+#How to use
+1. Alter the script to use your email address and the application password for your gmail account
+2. Make sure all xml files are appropriately named in the script
+3. Run the script
+
+If all is well, you should receive an email with the backup xml file as an attachment in your developer email
+account and each of the participants should be sent an email with the name of the person they are buying a 
+gift for.
