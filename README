@@ -1,18 +1,32 @@
 #README
-#SecretSantaScript 2022
+#SecretSantaScript 2023
 
 #Prerequisites
 You must have the following setup before running the SecretSantaScript
 1. Working python runtime environment
-2. 'input.xml' file in correct format
+2. 'inputDataFile.xml' file in correct format
 3. 'backup_master.xml' file in correct format if you are running the repetition test
 4. Valid gmail account with 2-factor authentication and an unused AppPassword (ref https://www.abstractapi.com/guides/sending-email-with-python)
 
 #How to use
 1. Alter the script to use your email address and the application password for your gmail account
-2. Make sure all xml files are appropriately named in the script
-3. Run the script
+2. If you are using a backup file from a previous year the script will use it to prevent getting repeat exchanges.
+Currently the script is looking for an xml named "backup_master2023.xml" in the working directory. Make sure
+that this file is present if you wish to use this functionality.
+3. Replace the string in Credentials.py to the AppPassword string generated during the setup in step 4 of the Prerequisites 
+section
+4. Run the script: SecretSanta.py -i [inputfile.xml] -o *[outputfile.xml]
+
+*Note: Here the output file xml is the name of the file created during the script execution. If you need
+to change the name of the previous years' backup file it will need to be done in the script manually 
 
 If all is well, you should receive an email with the backup xml file as an attachment in your developer email
 account and each of the participants should be sent an email with the name of the person they are buying a 
 gift for.
+
+#Other options
+1. Display the help screen : SecretSanta.py -h
+2. *Run test using the default parameters: SecretSanta.py -t
+
+*Note: the test run will not send the final list of emails to all participants, but it will generate a master
+email and xml document for you to check the results.
