@@ -1,5 +1,5 @@
 #README
-#SecretSantaScript 2023
+#SecretSantaScript 2024
 
 #Prerequisites
 You must have the following setup before running the SecretSantaScript
@@ -30,3 +30,9 @@ gift for.
 
 *Note: the test run will not send the final list of emails to all participants, but it will generate a master
 email and xml document for you to check the results.
+
+CHANGELOG
+---------
+1. Fixed a bug in generating a list from a backup file
+2. Added more exception handling to critical sections of script
+3. Added python logging functionality and copy stdout to file in working directory

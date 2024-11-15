@@ -5,4 +5,7 @@ class User:
 		self.last_name = last_name
 		self.email = email
 	def display(self):
-		print(str(self.first_name) + " " + str(self.last_name) + " : " + str(self.email))
+		out = str(str(self.first_name) + " " + str(self.last_name) + " : " + str(self.email))
+		print(out)
+		return out
+		

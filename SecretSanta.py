@@ -7,6 +7,8 @@ import ssl
 import operator
 import sys
 import getopt
+import os.path
+import logging
 from User import User
 from Credentials import cred_password
 from email.mime.multipart import MIMEMultipart
@@ -15,14 +17,41 @@ from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 from os.path import exists
 
+#global logger class. Should be initialized in Main
+logging.basicConfig(filename="SantasLog.log",
+					filemode='a',
+					datefmt='%H:%M:%S',
+					level=logging.DEBUG,
+					format='%(asctime)s - %(levelname)s - %(message)s')
+
 def parse_xml(input):
 	temp = []
-	for user in input.iter('User'):
-		fname = user[0].text
-		lname = user[1].text
-		email = user[2].text
-		luser = User(fname,lname,email)
-		temp.append(luser)
+
+	#We need to determine if this is xml is in 'Backup' format
+	#or if it is in the old 'User' format. We will handle both cases
+	if (input.tag != 'Backup'):
+		#It isn't a Backup file. Checking if it is in 'User' format
+		if (input.tag != 'Users'):
+			#It isn't in either valid format so we should throw an error
+			logging.error("Invalid input xml format detected! Aborting...")
+			print ('Invalid input file detected! Aborting...')
+			sys.exit()
+		else:
+			for user in input.iter('User'):
+				fname = user[0].text
+				lname = user[1].text
+				email = user[2].text
+				luser = User(fname,lname,email)
+				temp.append(luser)
+	else:
+		#Handle the backup file
+		for user in input.iter('GiftBuyer'):
+			fname = user[0].text
+			lname = user[1].text
+			email = user[2].text
+			luser = User(fname,lname,email)
+			temp.append(luser)
+
 	return temp
 
 def send_mail(strTo,strFrom,subject,body,attachment=False):
@@ -118,9 +147,8 @@ def check_repeats(oldlistfile,newlist):
 
 def main(argv):
 	#Globals
-	#TODO: add a logging class that prints to a file in the system directory
-	lastYear = '2022'
-	thisYear = '2023'
+	lastYear = '2023'
+	thisYear = '2024'
 	inputFile = ''
 	outputFile = ''
 	testRun = False
@@ -145,18 +173,31 @@ def main(argv):
 			inputFile = 'inputDataFile.xml' # <- Need to add as an argument for UI eventually
 			outputFile = 'backup_master' + thisYear + '.xml'
 			testRun = True
-			print ('Input file is ', inputFile)
-			print ('Output file is ', outputFile)
 		else:
 			print ('SecretSanta.py -i <inputfile> -o <outputfile>')
 			sys.exit()
 
+	#Log messages to both stdout and our logger class 
+	logging.info('Input file is %s', inputFile)
+	logging.info('Output file is ', outputFile)
+	print ('Input file is ', inputFile)
+	print ('Output file is ', outputFile)
+
 	#Get the list of users from xml file
-	finput = ET.parse(inputFile).getroot()
-	senders = parse_xml(finput)
-	receivers = list(senders)
-	#print(senders.__str__)
-	#print(receivers.__str__)
+	try:
+		finput = ET.parse(inputFile).getroot()
+		senders = parse_xml(finput)
+		receivers = list(senders)
+		#Log information about the initial list of Users
+		logging.info("List of users from input file:")
+		for user in senders:
+			output = user.display()
+			logging.info('%s',output)
+	except Exception:
+		logging.error("Could not open or parse the input file")
+		print("Could not open input file")
+		sys.exit()
+
 	distinct = False
 	while (distinct == False):
 		random.shuffle(receivers)
@@ -181,10 +222,12 @@ def main(argv):
 	#		<GiftBuyer>
 	#			<FirstName>User1FirstName</FirstName>
 	#			<LastName>User1LastName</LastName>
+	#			<Email>User1Email</Email>
 	#		</GiftBuyer>
 	#		<GiftReceiver>
-	#			<FirstName>User1FirstName</FirstName>
-	#			<LastName>User1LastName</LastName>
+	#			<FirstName>User2FirstName</FirstName>
+	#			<LastName>User2LastName</LastName>
+	#			<Email>User2Email</Email>
 	#		</GiftReceiver>
 	#	</Exchange>
 	for pair in check:
@@ -195,11 +238,13 @@ def main(argv):
 		gift_buyer = master_list_xml.SubElement(exchange,"GiftBuyer")
 		master_list_xml.SubElement(gift_buyer, "FirstName").text = pair[0].first_name
 		master_list_xml.SubElement(gift_buyer, "LastName").text = pair[0].last_name
+		master_list_xml.SubElement(gift_buyer, "Email").text = pair[0].email
 
 		#Add GiftReceiver
 		gift_receiver = master_list_xml.SubElement(exchange,"GiftReceiver")
 		master_list_xml.SubElement(gift_receiver, "FirstName").text = pair[1].first_name
 		master_list_xml.SubElement(gift_receiver, "LastName").text = pair[1].last_name
+		master_list_xml.SubElement(gift_receiver, "Email").text = pair[1].email
 
 		#print(pair[0].first_name + " " + pair[0].last_name + " : " + pair[1].first_name + " " + pair[1].last_name)
 		master_list += pair[0].first_name + " " + pair[0].last_name + " : " + pair[1].first_name + " " + pair[1].last_name + "\n"
@@ -208,6 +253,8 @@ def main(argv):
 	tree = ET.ElementTree(root)
 	#We will be appending the year to the backups to avoid confusion in the future
 	tree.write(outputFile)
+	#Log the 'master_list' string
+	logging.info("master list: \n%s", master_list) 
 
 	#email code
 	#This is the email containing the backup xml and the string representation of the list. It will only be sent to the admin account.
@@ -224,7 +271,11 @@ def main(argv):
 				<img src="cid:image1">
 				<br> """
 
-	send_mail(strTo,strFrom,subject,body,True)
+	try:
+		send_mail(strTo,strFrom,subject,body,True)
+	except Exception:
+		logging.error('Unable to email the final list!')
+		print('Error in sendMail ')
 
 	#send to everyone who their secret santa is
 	#IT IS RECOMMENDED THAT YOU RUN A TEST RUN BEFORE EXECUTING THIS BLOCK!!!
@@ -244,7 +295,11 @@ def main(argv):
 						<img src="cid:image1">
 						<br> """
 
-			send_mail(strTo,strFrom,subject,body)
+			try:
+				send_mail(strTo,strFrom,subject,body)
+			except Exception:
+				logging.error('Unable to email the list to the email address: %s', user[0].email)
+				print('Error in sendMail ')
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
